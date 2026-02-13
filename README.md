@@ -153,5 +153,5 @@ Your Name
 Mini Project – Object Oriented Programming Using Java
 
 ---
-![img1](
-
+![img1](https://github.com/kevinjohnn16/JerseyBillingSystem/blob/839db6aa1b2e13a6a2c51400336c61196ed71e13/Screenshot%202026-02-13%20194730.png)
+![img2](
