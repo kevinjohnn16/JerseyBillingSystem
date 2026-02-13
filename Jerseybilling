@@ -1,0 +1,223 @@
+import javax.swing.*;
+import java.awt.event.*;
+import java.sql.*;
+
+// ================= ABSTRACTION =================
+abstract class Jersey {
+    protected String teamName;
+
+    public Jersey(String teamName) {
+        this.teamName = teamName;
+    }
+
+    public abstract double getPrice();
+}
+
+// ================= INHERITANCE =================
+class FootballJersey extends Jersey {
+    public FootballJersey(String teamName) {
+        super(teamName);
+    }
+
+    public double getPrice() {
+        return 1200.0;
+    }
+}
+
+class CricketJersey extends Jersey {
+    public CricketJersey(String teamName) {
+        super(teamName);
+    }
+
+    public double getPrice() {
+        return 999.0;
+    }
+}
+
+// ================= CUSTOM EXCEPTION =================
+class InvalidTeamException extends Exception {
+    public InvalidTeamException(String msg) {
+        super(msg);
+    }
+}
+
+// ================= MULTITHREADING =================
+class BillThread extends Thread {
+    public void run() {
+        try {
+            System.out.println("Generating bill...");
+            Thread.sleep(1500);
+            System.out.println("Bill generated successfully!");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+// ================= DATABASE CLASS =================
+class JerseyDB {
+
+    static {
+        try {
+            Class.forName("org.sqlite.JDBC");
+
+            Connection con = DriverManager.getConnection("jdbc:sqlite:./jersey.db");
+            Statement stmt = con.createStatement();
+
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS jerseys (" +
+                    "team_name TEXT PRIMARY KEY, " +
+                    "price REAL)");
+
+            stmt.close();
+            con.close();
+
+            System.out.println("Database Ready ✅");
+
+        } catch (Exception e) {
+            System.out.println("DB Init Error: " + e.getMessage());
+        }
+    }
+
+    // INSERT OR UPDATE
+    public static void saveTeam(String teamName, double price) {
+        try {
+            Connection con = DriverManager.getConnection("jdbc:sqlite:./jersey.db");
+
+            PreparedStatement ps = con.prepareStatement(
+                    "INSERT INTO jerseys(team_name, price) VALUES(?, ?) " +
+                    "ON CONFLICT(team_name) DO UPDATE SET price=?");
+
+            ps.setString(1, teamName);
+            ps.setDouble(2, price);
+            ps.setDouble(3, price);
+
+            ps.executeUpdate();
+
+            System.out.println("Saved in DB: " + teamName);
+
+            ps.close();
+            con.close();
+
+        } catch (Exception e) {
+            System.out.println("Insert Error: " + e.getMessage());
+        }
+    }
+
+    // FETCH PRICE
+    public static double getPrice(String teamName) {
+        double price = 0;
+
+        try {
+            Connection con = DriverManager.getConnection("jdbc:sqlite:./jersey.db");
+
+            PreparedStatement ps = con.prepareStatement(
+                    "SELECT price FROM jerseys WHERE team_name=?");
+
+            ps.setString(1, teamName);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                price = rs.getDouble("price");
+            }
+
+            rs.close();
+            ps.close();
+            con.close();
+
+        } catch (Exception e) {
+            System.out.println("Fetch Error: " + e.getMessage());
+        }
+
+        return price;
+    }
+}
+
+// ================= MAIN GUI =================
+public class JerseyBillingSystem extends JFrame {
+
+    private JTextField teamField;
+    private JComboBox<String> sportBox;
+    private JLabel resultLabel;
+
+    public JerseyBillingSystem() {
+
+        setTitle("Jersey Billing System");
+        setSize(400, 300);
+        setLayout(null);
+
+        JLabel teamLabel = new JLabel("Enter Team Name:");
+        teamLabel.setBounds(40, 40, 150, 25);
+        add(teamLabel);
+
+        teamField = new JTextField();
+        teamField.setBounds(180, 40, 150, 25);
+        add(teamField);
+
+        JLabel sportLabel = new JLabel("Select Sport:");
+        sportLabel.setBounds(40, 80, 150, 25);
+        add(sportLabel);
+
+        sportBox = new JComboBox<>(new String[]{"Football", "Cricket"});
+        sportBox.setBounds(180, 80, 150, 25);
+        add(sportBox);
+
+        JButton billButton = new JButton("Generate Bill");
+        billButton.setBounds(120, 130, 150, 30);
+        add(billButton);
+
+        resultLabel = new JLabel("");
+        resultLabel.setBounds(40, 180, 300, 25);
+        add(resultLabel);
+
+        billButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                generateBill();
+            }
+        });
+
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    private void generateBill() {
+        try {
+            String team = teamField.getText().trim();
+            String sport = (String) sportBox.getSelectedItem();
+
+            if (team.isEmpty()) {
+                throw new InvalidTeamException("Team name cannot be empty!");
+            }
+
+            Jersey jersey;
+
+            // POLYMORPHISM
+            if (sport.equals("Football")) {
+                jersey = new FootballJersey(team);
+            } else {
+                jersey = new CricketJersey(team);
+            }
+
+            double price = jersey.getPrice();
+
+            // MULTITHREADING
+            BillThread bt = new BillThread();
+            bt.start();
+
+            // SAVE TO DATABASE
+            JerseyDB.saveTeam(team, price);
+
+            // FETCH FROM DATABASE
+            double dbPrice = JerseyDB.getPrice(team);
+
+            resultLabel.setText("Team: " + team + " | Price: ₹" + dbPrice);
+
+        } catch (InvalidTeamException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+        new JerseyBillingSystem();
+    }
+}
