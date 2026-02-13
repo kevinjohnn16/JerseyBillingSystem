@@ -149,9 +149,10 @@ The database is automatically created when the program runs.
 
 ## 👨‍💻 Author
 
-Your Name
+Kevin John Samuel
+Jain J Kolady
 Mini Project – Object Oriented Programming Using Java
 
 ---
 ![img1](https://github.com/kevinjohnn16/JerseyBillingSystem/blob/839db6aa1b2e13a6a2c51400336c61196ed71e13/Screenshot%202026-02-13%20194730.png)
-![img2](
+![img2](https://github.com/kevinjohnn16/JerseyBillingSystem/blob/6d6f83d66966988ffba72425ae574057d15e501c/Screenshot%202026-02-13%20194803.png)
